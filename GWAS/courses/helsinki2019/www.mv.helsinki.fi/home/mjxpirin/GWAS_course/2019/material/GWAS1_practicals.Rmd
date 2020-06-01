@@ -1,0 +1,212 @@
+---
+title: 'GWAS Practicals 1'
+author: "Matti Pirinen, University of Helsinki"
+date: "15-Jan-2019"
+urlcolor: blue
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Let's first get familiar with using R markdown. Open this file in Rstudio.
+In Rmarkdown we can write text, math in latex ($x^n_1$),
+and we can include R code through blocks that are initialized with a tag of  
+three pieces of grave accent symbol followed by {r} and the block ends in three graves. 
+```{r}
+#This is R code the results of which will be printed below
+2+3
+```
+You can suppress the code from being shown in the document by
+using echo=FALSE in {r,echo=FALSE} and you can make the block not to be included in 
+compiling the document by using include=FALSE in {r,include=FALSE}. 
+That is useful when we work on these practicals and want
+to concentrate on only one block at a time.
+
+Below are the codes used in lectures, with include=FALSE by default, and we can
+work with them by including them always one at a time in the code.
+Pressing `Knit` makes the document into html or pdf for viewing.
+
+
+#### Genotypes and HWE
+
+```{r, include=FALSE}
+#Block 1
+
+geno = c(66,29,4)
+n = sum(geno) #number of individuals
+f = sum(geno*c(0,1,2))/(2*n) #(66*0 + 29*1 + 4*2) / (2*(66+29+4))
+f #MAF
+hwe.prop = c((1-f)^2, 2*f*(1-f), f^2) #these would be the genotype freqs under HWE
+rbind(obs=geno/n, hwe=hwe.prop) #print the observed genotype freqs and the HWE.
+#For testing HWE we use chi-square test even though counts are quite small in last cell:
+hwe.test = sum((geno-n*hwe.prop)^2/(n*hwe.prop)) #HWE test statistic
+hwe.p = pchisq(hwe.test, df = 1, lower = FALSE) #P-value from the test
+barplot(geno, main=paste("rs429358 FIN in 1000G Phase3; HWE P=",signif(hwe.p,3)),
+        names = c(0,1,2), xlab = "genotype", col="skyblue")
+```
+
+
+```{r, include = FALSE} 
+#Block 2
+
+set.seed(19) #setting seed guarantees the same simulation results every time this code is run
+n = 1000
+sample.from.geno = sample(c(0,1,2), prob = geno, size = n, replace = T) #sample from genotype frequencies
+# replace = TRUE means sampling with replacement, that is, 
+# each genotype can be sampled many times, always with the same probabilities given in 'prob'
+tab = table(sample.from.geno) #table counts how many times each value is present
+counts.from.geno = rep(0,3) #How many carriers of each genotype
+counts.from.geno[ 1 + as.numeric( names(tab) )] = as.numeric(tab) #works even if some count is 0
+
+#To sample from HWE frequencies, we could use:
+#sample.from.hwe = sample(c(0,1,2), prob = c((1-f)^2, 2*f*(1-f), f^2), size = n, replace = T)
+#but a simpler way is to sample n genotypes directly from Bin(2,f) distribution:
+sample.from.hwe = rbinom(n, size = 2, p = f)
+counts.from.hwe = rep(0,3) #Let's count how many carriers of each genotype
+for(ii in 0:2){ #this is another way to do the counting compared to table() above
+  counts.from.hwe[ii+1] = sum(sample.from.hwe == ii)}
+
+rbind(geno = counts.from.geno/n, hwe = counts.from.hwe/n)
+
+barplot(cbind(counts.from.geno/n, counts.from.hwe/n), names = c("geno","HWE"), 
+        beside = F, horiz = T)
+```
+
+```{r, include = FALSE}
+#Block 3
+
+interval.from.geno = matrix(NA,ncol=2,nrow=3) #empty matrix
+interval.from.hwe = matrix(NA,ncol=2,nrow=3)
+for(ii in 1:3){ #loop over genotypes
+interval.from.geno[ii,] = qbeta(c(0.025,0.975), counts.from.geno[ii]+0.5, n-counts.from.geno[ii]+0.5)
+interval.from.hwe[ii,] = qbeta(c(0.025,0.975), counts.from.hwe[ii]+0.5, n-counts.from.hwe[ii]+0.5)
+}
+
+cbind(geno.est = counts.from.geno/n,interval.from.geno,
+      hwe.est = counts.from.hwe/n,interval.from.hwe ) 
+
+chisq.test(rbind(counts.from.geno,counts.from.hwe))
+```
+
+
+#### Quantitative traits
+
+1. Let's see what happens to the regression if we change the variant from being quite
+infrequent (4%) to being common (50%). Note how the linear model no longer perfectly
+matches the groups 0 and 1 because now also group 2 has more say!
+
+2. Look also what happens to R^2 explained by the model! Now we have a lot of 
+variation in the population level explained by this variant because its large
+effect (difference between groups 0 vs 2) affects a large proportion of the population.
+
+3. R doesn't output exact P-value for values <1e-16. How can we compute it?
+We can do it from t-statistic via `pchisq(t.stat^2, df=1, lower=F)`. Apply this
+to the effect of additive model results where you take `t.stat` from the 
+coefficients of `summary(lm.fit)`. Note that if `f` is 50% the P-value will
+be too small for R, but if you change it back to 4% then P-value is about 1e-36.
+
+
+```{r, include = FALSE}
+#Block 4
+
+n = 10000
+f = 0.04
+mu = c(0.02,-0.40,-2.00) #mean of each genotype
+sigma = c(1,1,1) #SD of each genotype
+
+x = rbinom(n, size=2, p=f) #genotypes assuming HWE
+table(x)/n #(always check that simulated data looks as it should before starting to work with it!)
+
+y = rep(NA,n) #make empty phenotype vector
+for(ii in 0:2){ #go through each genotype group
+  y[x == ii] = rnorm(sum(x == ii), mu[1+ii], sigma[1+ii]) } #generate traits for group ii
+
+boxplot(y~x, main="Simulating rs11591147 in Finns", ylab="LDL")
+
+lm.fit = lm(y~x)
+summary(lm.fit)
+t.stat = summary(lm.fit)$coefficients[2,3]
+pchisq(t.stat^2, df=1, lower=F)
+
+plot( x + runif(n,-0.05,0.05), y, xlab="genotype", ylab="LDL", xaxt="n", pch=3, cex=0.5) #some jitter to x 
+#so that all points are not on top of each other
+axis(1, at = 0:2, labels = 0:2)
+points(0:2,c(mean(y[x==0]), mean(y[x==1]), mean(y[x==2])), col="red",pch="X", cex=1.3)
+abline(lm.fit, col="orange", lwd=2)
+legend("topright",pch="X",legend ="group means",col="red")
+
+z = as.numeric( x == 2 ) #z is indicator for genotype group 2
+lm.full = lm( y ~ x + z )
+summary(lm.full)
+
+lm.full2 = lm( y ~ as.factor(x) )
+summary(lm.full2)
+```
+
+#### Quantile normalisation
+
+1. Let's add to the figure the density plot of the residuals `r` to see
+the intermediate step between `y`and `q`. You'll see that the two modes
+have disappeared already at this regression phase before QN.
+
+```{r, include = FALSE, fig.height=4}
+#Block 5
+n = 200 #males + females
+fem = rep( c(0,1), each = n/2) #who is female
+y = 2 + rgamma(n, shape = 1.5, scale = 1.5) #males have shift of 2
+y[fem == 1] = 4 + y[fem == 1] #females have shift of 6 = 2 + 4
+hist(y, breaks=30) #shows some outliers compared to mixture of 2 Normals
+
+#regress out sex and take residuals
+lm.fit = lm(y ~ fem)
+r = residuals(lm.fit)
+
+#find QN'ed trait values from qnorm = inverse of cumulative distribution of Normal
+inv.normalise <- function(x) { #this would also tolerate NAs
+  return( qnorm( (rank(x, na.last = "keep") - 0.5) / sum(!is.na(x))))}
+q = inv.normalise(r)
+#Let's plot y and q (after scaling to mean=0, var=1) 
+par(mfrow=c(1,2))
+plot(density(scale(y)), col="black", lwd = 2, xlim = c(-4,4), ylim = c(0,0.5), 
+     xlab="trait", main="" )
+lines(density(scale(q)), col = "darkgreen", lwd = 2)
+plot(y,q, col = c("cyan","gold")[1+fem])
+legend("bottomright", col=c("cyan","gold"), pch=1, leg=c("male","female") )
+```
+
+#### Binary traits
+
+1. What if we are not having a perfect additive model but OR2 is
+5 and not $1.43^2 = 2.04$? Change also the full model parameterisation
+to such that each genotype group has its own
+parameter in the model to easily see how the effect estimates change.
+
+```{r, include = FALSE}
+#Block 6
+set.seed(89)
+or = 1.43
+a.cntrl = 0.13
+q = c((1-a.cntrl)^2, 2*a.cntrl*(1-a.cntrl), a.cntrl^2) #HWE holds in controls
+f.0 = 1/(1+or*q[2]/q[1]+or^2*q[3]/q[1])
+f = c(f.0, or*q[2]/q[1]*f.0, or^2*q[3]/q[1]*f.0)
+rbind(controls=q,cases=f) #print out cases and controls
+
+n=1000
+x.cases = sample(c(0,1,2), prob = f, size = n, replace = T)
+x.controls = sample(c(0,1,2), prob = q, size = n, replace = T)
+x = c(x.cases,x.controls) #genotypes of all samples
+y = c(rep(1,n),rep(0,n)) #binary phenotype corresponding to genotypes: 1st cases, then controls
+glm.fit = glm(y~x, family = "binomial")
+summary(glm.fit)
+
+b = summary(glm.fit)$coeff[2,1] #estimate, beta-hat
+se = summary(glm.fit)$coeff[2,2] #standard error
+c(exp(b), exp(b-1.96*se), exp(b+1.96*se)) #endpoints always on logOR scale, then transform to OR scale
+
+z = as.numeric( x == 2 )
+glm.full = glm( y ~ x + z, family = "binomial")
+summary(glm.full)
+```

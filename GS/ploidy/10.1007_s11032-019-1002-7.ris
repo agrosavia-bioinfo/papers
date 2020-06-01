@@ -1,0 +1,21 @@
+TY  - JOUR
+AU  - Matias, Filipe Inácio
+AU  - Alves, Filipe Couto
+AU  - Meireles, Karem Guimarães Xavier
+AU  - Barrios, Sanzio Carvalho Lima
+AU  - do Valle, Cacilda Borges
+AU  - Endelman, Jeffrey B.
+AU  - Fritsche-Neto, Roberto
+PY  - 2019
+DA  - 2019/06/28
+TI  - On the accuracy of genomic prediction models considering multi-trait and allele dosage in Urochloa spp. interspecific tetraploid hybrids
+JO  - Molecular Breeding
+SP  - 100
+VL  - 39
+IS  - 7
+AB  - Currently, there is a lack of information regarding the employment of genomic prediction in tropical forages when compared to other crops and temperate forages. Moreover, genomic prediction models have been extensively developed for diploid species, whereas to apply those to polyploids most studies consider the genotypic information parametrized for diploids. This simplification can reduce the accuracy to estimate genetic effects and, consequently, the genomic breeding values. Another challenge is that agronomical and nutritional traits in forages frequently are negatively correlated and may have low heritability. To circumvent those problems one attractive alternative is the use of multi-trait prediction models. Therefore, we compared the impact of the ploidy parametrization over the prediction accuracy of agronomical and nutritional traits in Urochloa spp. hybrids using single and multi-trait models. GBLUP-A (additive) and GBLUP-AD (additive + dominance) showed similar prediction abilities in both single and multi-trait models. Conversely, combining GBLUP-AD and tetraploid information may improve the selection coincidence. Furthermore, the multi-trait Validation Scheme 2, where one trait is not evaluated for some individuals, can provide an increment of up to 30% of prediction ability. Therefore, it is an excellent strategy for traits with low heritability. Overall, all genomic selection models provided greater genetic gains than phenotypic selection. Similarly, the allele dosage associated with additive, dominance, and multi-trait factors increased the accuracy of genomic prediction models for interspecific polyploid hybrids. Finally, genomic prediction should be used in tropical forages breeding programs in order to reduce time.
+SN  - 1572-9788
+UR  - https://doi.org/10.1007/s11032-019-1002-7
+DO  - 10.1007/s11032-019-1002-7
+ID  - Matias2019
+ER  - 

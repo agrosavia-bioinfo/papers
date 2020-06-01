@@ -1,0 +1,238 @@
+---
+title: 'GWAS 3 Practicals'
+author: "Matti Pirinen, University of Helsinki"
+date: "23-Jan-2019"
+output:
+  html_document: default
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+set.seed(19)
+```
+
+
+
+#### 3.1 Test statistic under the alternative
+
+1. Check that SE taken below from `lm` corresponds to the SE you get from the formula
+in lectures. By increasing `n` the two get closer.
+
+2. Let's use these distributions to demonstrate why different parameters affect power.
+(i) Change sample size to 1000 and increase the plotting range.
+(ii) Change MAF to 0.01.
+(iii) Change effect size to 0.05 and then to 0.5.
+
+
+```{r, fig.height = 4, include = F}
+n = 500 #individuals
+p = 5000 #SNPs for both null and alternative
+f = 0.5 #MAF
+b.alt = 0.2 #effect size under the alternative hypothesis
+x = rbinom(n, 2, f) #genotypes at 1 SNP for n ind 
+y = scale( rnorm(n) ) #random phenotype normalized to have sample sd=1
+se = summary( lm( y ~ x ) )$coeff[2,2] #pick se, and assume it stays constant and independent of beta
+b.hat.null = rnorm(p, 0, se) #estimates under null
+b.hat.alt = rnorm(p, b.alt, se)  #estimates under alternative
+
+par(mfrow=c(1,2))
+#Draw observed densities of z-scores 
+plot(0, xlim=c(-3,6), ylim=c(0,0.5), xlab="z", ylab="density", col="white") #empty panel for plotting
+lines(density( (b.hat.null/se) ), col="black", lwd=2) #Wald stat for null variants
+lines(density( (b.hat.alt/se) ), col="red", lwd=2) #Wald stat for alternative variants
+# add theoretical densities for z-scores
+x.seq = seq(-3,6,0.01)
+lines(x.seq, dnorm(x.seq, 0, 1), col = "blue", lty = 2) #for null
+lines(x.seq, dnorm(x.seq, b.alt/se, 1), col = "orange", lty = 2) #for alternative
+
+#Draw observed densities of z^2 
+plot(0, xlim=c(0,35), ylim=c(0,1), xlab=expression(z^2), ylab="density", col="white") #empty panel for plotting
+lines(density( (b.hat.null/se)^2 ), col="black", lwd=2) #chi-square stat for null variants
+lines(density( (b.hat.alt/se)^2 ), col="red", lwd=2) #chi-square stat for alternative variants
+#Let's add theoretical densities of the chi-square distributions
+x.seq = seq(0,35,0.01)
+lines(x.seq, dchisq(x.seq, df = 1, ncp = 0), col = "blue", lty = 2) #ncp=0 for null
+lines(x.seq, dchisq(x.seq, df = 1, ncp = (b.alt/se)^2), col = "orange", lty = 2) #ncp = (beta/se)^2 for alternative
+legend("topright", leg = c("NULL obs'd","ALT obs'd","NULL theor","ALT theor"),
+       col = c("black","red","blue","orange"), 
+       lty = c(1,1,2,2), lwd = c(2,2,1,1) )
+#Let's add significance thresholds corresponding to 0.05 and 5e-8
+#By definition, the thresholds are always computed under the null.
+q.thresh = qchisq( c(0.05,5e-8), df = 1, ncp = 0, lower = FALSE)
+abline(v = q.thresh, col = c("darkgreen","springgreen"), lty = 3)
+text( q.thresh+2, c(0.4,0.4), c("P<0.05","P<5e-8") )
+
+q.thresh = qchisq(c(0.05,5e-8), df = 1, ncp = 0, lower = FALSE) #repeating thresholds in chi-square units
+pchisq(q.thresh, df = 1, ncp = (b.alt/se)^2, lower = FALSE) #correspond to right tail probabilities
+```
+
+
+
+#### 3.2.1 Formulas for standard errors
+For the linear model 
+$$y = \mu + x\beta + \varepsilon,$$
+SE of $\widehat{\beta}$ is
+$$\textrm{SE}_\textrm{lin} = \frac{\sigma}{\sqrt{\textrm{Var}(x) n}} \approx \frac{\sigma}{\sqrt{2 f (1-f) n}},$$
+where the variance of genotype $x$ is, under Hardy-Weinberg 
+equilibrium, approximately $2f(1-f)$, and $\sigma$ is the standard deviation
+of the error term $\varepsilon$: $\sigma^2 = \textrm{Var}(y) - \beta^2 \textrm{Var}(x).$
+
+For *binary* case-control data analyzed by logistic regression,
+$$\textrm{SE}_\textrm{bin} \approx \frac{1}{\sqrt{\textrm{Var}(x) n \phi (1-\phi)}} \approx \frac{1}{\sqrt{2 f (1-f) n \phi (1-\phi)}}.$$
+
+Check that SE formula works for logistic regression by generating null genotype phenotype data
+and using `glm` to get the SE and comparing to the formula above.
+
+
+The NCPs of additive GWAS models are
+$$\textrm{NCP}_\textrm{lin} = (\beta/\textrm{SE}_\textrm{lin})^2 \approx 2 f (1-f) n \beta^2/\sigma^2 \qquad \textrm{ and }
+\qquad \textrm{NCP}_\textrm{bin} = (\beta/\textrm{SE}_\textrm{bin})^2 \approx 2 f (1-f) n \phi(1-\phi) \beta^2.$$
+
+
+
+
+#### 3.2.5 Proportion of cases
+
+Suppose that you have 300 cases of disease D and 20000 controls.
+1. What would increase your power more: 100 more cases or 10000 more controls?
+2. If you are looking for an effect of $\beta=0.1$ on log-odds scale and MAF = 30%,
+is there a limit to power that you will achieve if you cannot increase your case sample,
+but you had unlimited access to controls.
+
+
+
+
+
+
+
+
+```{r, warning=F, include = F}
+sz.res = read.table("http://www.helsinki.fi/~mjxpirin/association/sz_res.txt", 
+                    as.is = TRUE, header = TRUE)
+sz.res[1,] #see what data we have
+#Let's plot the known SZ variants on frequency - effect size coordinates
+#And draw some power curves there at genome-wide significance threshold
+maf = sz.res[,"Frq_control"] #Not yet maf but allele 1 frequency
+maf[maf > 0.5] = 1 - maf[maf > 0.5] #Make it to MAF: always less than 0.5
+b = abs(log(sz.res[,"Combined_OR"])) #effect size on log-odds-ratio scale with positive sign
+pw.thresh = 0.5
+p.threshold = 5e-8
+plot(maf, b, ylim = c(0,0.3), xlim = c(0.01,0.5), xlab = "MAF",
+     ylab = "EFFECT SIZE (in log-odds-ratio)", xaxt = "n", yaxt = "n", log = "x", #make x-axis logarithmic
+     main = substitute(paste("Power = ", pw.thresh ," at ", alpha ," = ",p.threshold),
+                     list(pw.thresh = pw.thresh, p.threshold = p.threshold)),
+     cex.main = 1.8, cex.lab = 1.3, pch = 19)
+axis(1, at = c(0.01, 0.02, 0.05, 0.10, 0.25, 0.5), cex.axis = 1.3)
+axis(2, at = c(0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3), cex.axis = 1.3)
+grid()
+
+q = qchisq(p.threshold, df = 1, lower = F) #chi-square value corresp. significance threshold
+#matrix of numbers of cases (col1) and controls (col2):
+Ns = matrix( c(3332,3587, 10000,10000, 34000,45600), ncol = 2 , byrow = T) 
+cols=c("green", "cyan", "blue")
+
+f = seq(0.01, 0.5, length = 200)
+b = seq(0, 0.3, length = 200)
+legends = c()
+par(mar = c(6,6,5,1))
+for(set in 1:nrow(Ns)){
+  pw = rep(NA, length(b)) #power at each candidate b
+  b.for.f = rep(NA,length(f)) #for each f gives the b value that leads to target power
+  for(i in 1:length(f)){ 
+    pw = pchisq(q, df = 1, ncp = Ns[set,1]*Ns[set,2] / sum(Ns[set,])*2*f[i]*(1-f[i])*b^2, lower = F)
+    b.for.f[i] = b[ min( which(pw > pw.thresh) ) ]
+  }
+  lines(f, b.for.f, t = "l", col = cols[set], lwd = 1.6)
+  legends = c(legends, paste(Ns[set,],collapse = "/") ) #make a "#cases/#controls" tag for legend
+}
+legend("bottomleft", lty = c(1,1), col = cols, legend = legends, lwd = 2, cex = 1.3)
+```
+
+```{r, include = F, fig.height=4}
+plot.mean.linear.model<-function(lm.fit,n,afreq,true.b){
+  #plots the means and 95%CIs for three genotype classes (0,1,2)
+  #and adds regression line
+  #assumes that lm.fit has been computed for mean centered genotypes
+  #and transforms the intercept parameter back to 0,1,2 -scale
+  #Uses 'n','afreq' and 'true.b' only to write the title.
+  
+  plot(0,col="white",xlim=c(-1,3),ylim=range(lm.fit$y),xlab="genotype",ylab="mean trait",xaxt="n")
+  axis(1,at=c(0,1,2),cex.axis=1.4)
+  mean.x=-min(lm.fit$x[,2]) #because mean was subtracted from the original genotypes, and min corresponds to 0
+  x=lm.fit$x[,2]+mean.x #move x back to 0,1,2 scale
+  for(i in 0:2){
+    ind=(abs(x-i)<0.01) #these have genotype 'i'
+    n.i=sum(ind)
+    if(n.i>0){
+      mu=mean(lm.fit$y[ind]);se=sd(lm.fit$y)/sqrt(n.i) #estimate and se for mean trait in this genotype group
+      arrows(i,mu-2*se,i,mu+2*se,code=0);points(i,mu,pch=19)
+    }
+  }
+  b=signif(lm.fit$coeff[2],3);s=signif(summary(lm.fit)$coefficients[2,2],3);pval=signif(summary(lm.fit)$coefficients[2,4],2)
+  text(0,max(lm.fit$y)-0.3,substitute(paste(hat(beta),"=",b," se=",s," p=",pval),list(b=b,s=s,pval=pval)))
+  title(paste("n=",n," afreq=",afreq," b=",true.b,sep=""),cex.main=1.5)
+  a=lm.fit$coeff[1]-mean.x*lm.fit$coeff[2];b=lm.fit$coeff[2] #NOTE:intercept transformed back to +mean.x coordinates
+  abline(a=a,b=b,lwd=2,col="blue") #add regression line
+}
+    
+plot.sample.regressions<-function(lm.fit,n.samples=20,ask=FALSE){
+  #Plots n.samples regression lines from lm.fit object
+  #Assumes uniform priors. Hence the distributions for parameters are Gaussian with mean and sd
+  #given by point estimate and SE.
+  #If ask = TRUE, stops after each line and waits for a key to be pressed.
+  
+  mean.x=-min(lm.fit$x[,2]) #because mean was subtracted from the original genotypes, and min corresponds to 0
+  mu=rnorm(n.samples,lm.fit$coeff[1],summary(lm.fit)$coefficients[1,2]) 
+  b=rnorm(n.samples,lm.fit$coeff[2],summary(lm.fit)$coefficients[2,2])
+  mu=mu-mean.x*b #transform intercepts to original 0,1,2 -scale
+  for(i in 1:n.samples){
+    if(ask){cat ("Press [enter] for the next line");line <- readline();}
+    abline(a=mu[i],b=b[i],lty=1,lwd=0.7,col="gray")
+  }
+}
+  
+regression.simulations<-function(b,n,afreq,n.samples=20,ask=TRUE){
+  #b vector of effect sizes
+  #n vector of sample sizes
+  #afreq vector of allele frequencies for the effect allele
+  #n.samples, how many samples of regression line are plotted
+  #ask, whether to wait for user key press before each sample line is drawn
+
+  k=length(b)*length(n)*length(afreq)
+  stopifnot(k<21)
+  dim.2=ceiling(sqrt(k));dim.1=ceiling(k/dim.2)
+  par(mfrow=c(dim.1,dim.2))
+  for(b.val in b){
+    for(n.val in n){
+      for(afreq.val in afreq){
+        x=rbinom(n.val,size=2,prob=afreq.val) #genotypes under Hardy-Weinberg equilibrium
+        y=as.vector(scale(rnorm(n.val,0,sqrt(1-2*afreq.val*(1-afreq.val)*b.val^2))+x*b.val))
+        x=x-mean(x) #mean center x so that estimates of mu and b will be independent
+        lm.fit=lm(y~x,y=T,x=T)
+        plot.mean.linear.model(lm.fit,n.val,afreq.val,b.val)
+        plot.sample.regressions(lm.fit,n.samples,ask=ask)
+      }
+    }
+  }
+}
+
+
+#Why does the power increase with 'n', the sample size?
+regression.simulations(b=0.2,n=c(100,10000),afreq=0.5, ask=FALSE)
+
+
+#Why does the power increase with minor allele frequency?
+regression.simulations(b=0.2,n=10000,afreq=c(0.5,0.01), ask=FALSE)
+
+
+#Why does the power increase with effect size b^2?
+regression.simulations(b=c(0.2,1),n=100,afreq=0.5, ask=FALSE)
+
+
+#You can also run for different combinations of parameters simultaneously,
+#and put ask=FALSE if you don't want to hit Enter all the time
+#and add more lines ('n.samples')
+#regression.simulations(b=c(0.2),n=c(100,10000),afreq=c(0.5,0.01),ask=FALSE,n.samples=100)
+
+```

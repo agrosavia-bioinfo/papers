@@ -1,0 +1,16 @@
+TY  - JOUR
+AU  - Kaler, Avjinder S.
+AU  - Purcell, Larry C.
+PY  - 2019
+DA  - 2019/07/29
+TI  - Estimation of a significance threshold for genome-wide association studies
+JO  - BMC Genomics
+SP  - 618
+VL  - 20
+IS  - 1
+AB  - Selection of an appropriate statistical significance threshold in genome-wide association studies is critical to differentiate true positives from false positives and false negatives. Different multiple testing comparison methods have been developed to determine the significance threshold; however, these methods may be overly conservative and may lead to an increase in false negatives. Here, we developed an empirical formula to determine the statistical significance threshold that is based on the marker-based heritability of the trait. To develop a formula for a significance threshold, we used 45 simulated traits in soybean, maize, and rice that varied in both broad sense heritability and the number of QTLs.
+SN  - 1471-2164
+UR  - https://doi.org/10.1186/s12864-019-5992-7
+DO  - 10.1186/s12864-019-5992-7
+ID  - Kaler2019
+ER  - 

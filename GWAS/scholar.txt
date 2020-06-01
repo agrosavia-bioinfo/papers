@@ -1,0 +1,9 @@
+@article{yu2006unified,
+  title={A unified mixed-model method for association mapping that accounts for multiple levels of relatedness.},
+  author={Yu, J and Pressoir, G and Briggs, WH and Vroh, I Bi and Yamasaki, M and Doebley, JF and McMullen, MD and Gaut, BS and Nielsen, DM and Holland, JB and others},
+  journal={Nature genetics},
+  volume={38},
+  number={2},
+  pages={203--208},
+  year={2006}
+}

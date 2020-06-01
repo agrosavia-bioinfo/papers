@@ -1,0 +1,23 @@
+TY  - JOUR
+AU  - Tecle, Isaak Y.
+AU  - Edwards, Jeremy D.
+AU  - Menda, Naama
+AU  - Egesi, Chiedozie
+AU  - Rabbi, Ismail Y.
+AU  - Kulakow, Peter
+AU  - Kawuki, Robert
+AU  - Jannink, Jean-Luc
+AU  - Mueller, Lukas A.
+PY  - 2014
+DA  - 2014/12/14
+TI  - solGS: a web-based tool for genomic selection
+JO  - BMC Bioinformatics
+SP  - 398
+VL  - 15
+IS  - 1
+AB  - Genomic selection (GS) promises to improve accuracy in estimating breeding values and genetic gain for quantitative traits compared to traditional breeding methods. Its reliance on high-throughput genome-wide markers and statistical complexity, however, is a serious challenge in data management, analysis, and sharing. A bioinformatics infrastructure for data storage and access, and user-friendly web-based tool for analysis and sharing output is needed to make GS more practical for breeders.
+SN  - 1471-2105
+UR  - https://doi.org/10.1186/s12859-014-0398-7
+DO  - 10.1186/s12859-014-0398-7
+ID  - Tecle2014
+ER  - 
